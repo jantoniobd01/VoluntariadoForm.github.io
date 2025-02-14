@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rompecabezas de San Valentín</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            background-color: #ffe6e6;
+            position: relative;
+        }
+        #puzzle-container {
+            display: grid;
+            grid-template-columns: repeat(6, 100px);
+            grid-template-rows: repeat(4, 100px);
+            gap: 2px;
+            width: 606px;
+            margin: auto;
+            position: relative;
+            z-index: 1;
+        }
+        .puzzle-piece {
+            width: 100px;
+            height: 100px;
+            background-size: 600px 400px;
+            cursor: grab;
+            border: 1px solid #fff;
+        }
+        #message {
+            display: none;
+            font-size: 20px;
+            color: #d63384;
+            margin-top: 30px; /* Espacio extra encima del mensaje */
+            z-index: 2;
+            position: relative;
+        }
+        .gif {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            z-index: 2;
+        }
+        .gif1 { top: 10px; left: 10px; }
+        .gif2 { top: 10px; right: 10px; }
+        .gif3 { display: none; bottom: 10px; left: 50%; transform: translateX(-50%); }
+        .gif-lose { display: none; bottom: 10px; left: 50%; transform: translateX(-50%); }
+        #timer {
+            font-size: 18px;
+            margin-top: 10px;
+            color: #d63384;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #d63384;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 30px; /* Espacio entre el mensaje y los botones */
+        }
+        button:hover {
+            background-color: #c12f6a;
+        }
+        .message-container {
+            position: relative;
+            z-index: 3;
+            margin-top: 50px; /* Espacio antes de los elementos de victoria/perdida */
+        }
+    </style>
+</head>
+<body>
+    <h1>¡ARMA EL ROMPECABEZAS CHIQUITA 💕🤗!</h1>
+    <p id="timer">Tiempo: 90s</p>
+    <img src="bubu-bubu-dudu.gif" class="gif gif1" alt="Decoración">
+    <img src="bubu-bubu-dudu.gif" class="gif gif2" alt="Decoración">
+    <img src="Bubu Dudu.gif" class="gif gif3" alt="Decoración" id="finalGif">
+    <img src="bubu-lose.gif" class="gif gif-lose" alt="Decoración" id="loseGif">
+    <div id="puzzle-container"></div>
+    <div class="message-container">
+        <p id="message">🎉 ¡Feliz dia de San Valentin amorcito, espero que lo hayas pasado bien, talvez no podamos hacer muchas cositas hoy pero con que estemos juntos, cariño y abrazos no te faltara! ❤️</p>
+    </div>
+    
+    <button id="startButton">Iniciar Juego</button>
+    <button id="retryButton" style="display:none;">Volver a Intentar</button>
+    <button id="exitButton" style="display:none;">Salir</button>
+
+    <script>
+        const imageSrc = 'IMG_20250115_141612.jpg'; // Imagen del rompecabezas
+        const container = document.getElementById('puzzle-container');
+        const message = document.getElementById('message');
+        const finalGif = document.getElementById('finalGif');
+        const loseGif = document.getElementById('loseGif');
+        const timerElement = document.getElementById('timer');
+        const startButton = document.getElementById('startButton');
+        const retryButton = document.getElementById('retryButton');
+        const exitButton = document.getElementById('exitButton');
+        let pieces = [];
+        let timeElapsed = 90;  // Iniciar en 90 segundos
+        let timerInterval;
+        let gameStarted = false;
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeElapsed--;
+                timerElement.textContent = `Tiempo: ${timeElapsed}s`;
+                if (timeElapsed <= 0) {
+                    stopTimer();
+                    message.textContent = "⏳ El tiempo se acabó bb :_( ¡Inténtalo de nuevo!";
+                    message.style.display = 'block';
+                    loseGif.style.display = 'block';
+                    retryButton.style.display = 'inline-block';
+                    exitButton.style.display = 'inline-block';
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function checkCompletion() {
+            if (pieces.every((piece, index) => parseInt(piece.dataset.index) === index)) {
+                stopTimer();
+                message.textContent = "🎉 ¡Feliz dia de San Valentin amorcito, espero que lo hayas pasado bien, talvez no podamos hacer muchas cositas hoy pero con que estemos juntos, cariño y abrazos no te faltara! ❤️";
+                message.style.display = 'block';
+                finalGif.style.display = 'block';
+                retryButton.style.display = 'inline-block';
+                exitButton.style.display = 'inline-block';
+            }
+        }
+
+        function createPuzzle() {
+            for (let i = 0; i < 24; i++) {
+                let piece = document.createElement('div');
+                piece.classList.add('puzzle-piece');
+                piece.style.backgroundImage = `url(${imageSrc})`;
+                piece.style.backgroundPosition = `-${(i % 6) * 100}px -${Math.floor(i / 6) * 100}px`;
+                piece.draggable = true;
+                piece.dataset.index = i;
+                pieces.push(piece);
+            }
+
+            shuffleArray(pieces);
+            pieces.forEach(piece => container.appendChild(piece));
+        }
+
+        let draggedPiece = null;
+
+        container.addEventListener('dragstart', (e) => {
+            draggedPiece = e.target;
+            e.dataTransfer.setData('text/plain', e.target.dataset.index);
+        });
+
+        container.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+
+        container.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const target = e.target;
+            if (target.classList.contains('puzzle-piece') && draggedPiece) {
+                const draggedIndex = parseInt(draggedPiece.dataset.index);
+                const targetIndex = parseInt(target.dataset.index);
+                
+                const draggedClone = draggedPiece.cloneNode(true);
+                const targetClone = target.cloneNode(true);
+                
+                container.replaceChild(draggedClone, target);
+                container.replaceChild(targetClone, draggedPiece);
+                
+                pieces = Array.from(container.children);
+                checkCompletion();
+            }
+        });
+
+        startButton.addEventListener('click', () => {
+            if (!gameStarted) {
+                gameStarted = true;
+                startButton.style.display = 'none';
+                createPuzzle();
+                startTimer();
+            }
+        });
+
+        retryButton.addEventListener('click', () => {
+            location.reload(); // Recargar la página para reiniciar el juego
+        });
+
+        exitButton.addEventListener('click', () => {
+            window.close(); // Cerrar la ventana
+        });
+    </script>
+</body>
+</html>
